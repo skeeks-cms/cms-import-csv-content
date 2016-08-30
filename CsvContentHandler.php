@@ -73,7 +73,7 @@ class CsvContentHandler extends CsvHandler
     {
         parent::renderConfigForm($form);
 
-        echo $form->field($this, 'content_id')->listBox(CmsContent::getDataForSelect(), ['size' => 1, 'id' => 'sx-select-content']);
+        echo $form->field($this, 'content_id')->listBox(array_merge(['' => ' - '], CmsContent::getDataForSelect()), ['size' => 1, 'id' => 'sx-select-content']);
 
         if ($this->content_id)
         {
