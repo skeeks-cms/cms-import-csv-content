@@ -15,14 +15,34 @@ use yii\helpers\ArrayHelper;
 use yii\widgets\ActiveForm;
 
 /**
+ * @property CmsContent $cmsContent
+ *
  * Class CsvContentHandler
  *
  * @package skeeks\cms\importCsvContent
  */
 class CsvContentHandler extends CsvHandler
 {
-    public $matching = [];
     public $content_id = null;
+    
+    public function getAvailableFields()
+    {
+        $element = new CmsContentElement();
+        return array_merge(['' => ' - '], $element->attributeLabels());
+    }
+
+    /**
+     * @return null|CmsContent
+     */
+    public function getCmsContent()
+    {
+        if (!$this->content_id)
+        {
+            return null;
+        }
+
+        return CmsContent::findOne($this->content_id);
+    }
 
     public function init()
     {
@@ -35,8 +55,6 @@ class CsvContentHandler extends CsvHandler
     public function rules()
     {
         return ArrayHelper::merge(parent::rules(), [
-            ['matching' , 'required'],
-            ['matching' , 'safe'],
 
             ['content_id' , 'required'],
             ['content_id' , 'integer'],
@@ -47,23 +65,7 @@ class CsvContentHandler extends CsvHandler
     {
         return ArrayHelper::merge(parent::attributeLabels(), [
             'content_id'        => \Yii::t('skeeks/importCsvContent', 'Контент'),
-            'matching'          => \Yii::t('skeeks/importCsvContent', 'Соотвествие'),
         ]);
-    }
-
-    /**
-     * @return array
-     */
-    public function getCsvColumns()
-    {
-        $handle = fopen($this->taskModel->rootFilePath, "r");
-
-        while (($data = fgetcsv($handle, 0, $this->csvDelimetr)) !== FALSE)
-        {
-            return $data;
-        }
-
-        return [];
     }
 
     /**
@@ -73,23 +75,19 @@ class CsvContentHandler extends CsvHandler
     {
         parent::renderConfigForm($form);
 
-        echo $form->field($this, 'content_id')->listBox(array_merge(['' => ' - '], CmsContent::getDataForSelect()), ['size' => 1, 'id' => 'sx-select-content']);
+        echo $form->field($this, 'content_id')->listBox(
+            array_merge(['' => ' - '], CmsContent::getDataForSelect()), [
+            'size' => 1,
+            'data-form-reload' => 'true'
+        ]);
 
         if ($this->content_id)
         {
             echo $form->field($this, 'matching')->widget(
-                MatchingInput::className()
+                \skeeks\cms\importCsv\widgets\MatchingInput::className()
             );
         }
 
-        \Yii::$app->view->registerJs(<<<JS
-        $("#sx-select-content").on('change', function()
-        {
-            sx.CsvImport.update();
-            return false;
-        });
-JS
-);
     }
 
 }
