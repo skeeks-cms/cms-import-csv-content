@@ -69,12 +69,26 @@ class ImportCsvContentHandler extends ImportCsvHandler
     }
 
 
+    /**
+     * Соответствие полей
+     * @var array
+     */
+    public $matching = [];
+
     public function rules()
     {
         return ArrayHelper::merge(parent::rules(), [
 
             ['content_id' , 'required'],
             ['content_id' , 'integer'],
+
+            [['matching'], 'safe'],
+            [['matching'], function($attribute) {
+                if (!in_array('element.name', $this->$attribute))
+                {
+                    $this->addError($attribute, "Укажите соответствие");
+                }
+            }]
         ]);
     }
 
@@ -82,6 +96,7 @@ class ImportCsvContentHandler extends ImportCsvHandler
     {
         return ArrayHelper::merge(parent::attributeLabels(), [
             'content_id'        => \Yii::t('skeeks/importCsvContent', 'Контент'),
+            'matching'          => \Yii::t('skeeks/importCsvContent', 'Preview content and configuration compliance'),
         ]);
     }
 
