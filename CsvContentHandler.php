@@ -8,6 +8,7 @@
 namespace skeeks\cms\importCsvContent;
 
 use skeeks\cms\importCsv\handlers\CsvHandler;
+use skeeks\cms\importCsv\helpers\CsvImportRowResult;
 use skeeks\cms\importCsvContent\widgets\MatchingInput;
 use skeeks\cms\models\CmsContent;
 use skeeks\cms\models\CmsContentElement;
@@ -27,8 +28,23 @@ class CsvContentHandler extends CsvHandler
     
     public function getAvailableFields()
     {
-        $element = new CmsContentElement();
-        return array_merge(['' => ' - '], $element->attributeLabels());
+        $element = new CmsContentElement([
+            'content_id' => $this->cmsContent->id
+        ]);
+
+        $fields = [];
+
+        foreach ($element->attributeLabels() as $key => $name)
+        {
+            $fields['element.' . $key] = $name;
+        }
+
+        foreach ($element->relatedPropertiesModel->attributeLabels() as $key => $name)
+        {
+            $fields['property.' . $key] = $name . " [свойство]";
+        }
+
+        return array_merge(['' => ' - '], $fields);
     }
 
     /**
@@ -87,7 +103,25 @@ class CsvContentHandler extends CsvHandler
                 \skeeks\cms\importCsv\widgets\MatchingInput::className()
             );
         }
+    }
 
+    /**
+     * @param $number
+     * @param $data
+     *
+     * @return CsvImportRowResult
+     */
+    public function import($number, $data)
+    {
+        $result = new CsvImportRowResult();
+
+        $element                = new CmsContentElement();
+        $element->content_id    = $this->content_id;
+
+        $result->data           = $this->matching;
+        $result->message        = 'Элемент добавлен';
+
+        return $result;
     }
 
 }
