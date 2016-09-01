@@ -9,6 +9,7 @@ namespace skeeks\cms\importCsvContent;
 
 use skeeks\cms\importCsv\handlers\CsvHandler;
 use skeeks\cms\importCsv\helpers\CsvImportRowResult;
+use skeeks\cms\importCsv\ImportCsvHandler;
 use skeeks\cms\importCsvContent\widgets\MatchingInput;
 use skeeks\cms\models\CmsContent;
 use skeeks\cms\models\CmsContentElement;
@@ -22,7 +23,7 @@ use yii\widgets\ActiveForm;
  *
  * @package skeeks\cms\importCsvContent
  */
-class CsvContentHandler extends CsvHandler
+class ImportCsvContentHandler extends ImportCsvHandler
 {
     public $content_id = null;
     

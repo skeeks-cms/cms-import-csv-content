@@ -3,12 +3,12 @@ return [
 
     'components' =>
     [
-        'importCsv' => [
+        'cmsImport' => [
             'handlers'     =>
             [
-                'skeeks\cms\importCsvContent\CsvContentHandler' =>
+                'skeeks\cms\importCsvContent\ImportCsvContentHandler' =>
                 [
-                    'class' => 'skeeks\cms\importCsvContent\CsvContentHandler'
+                    'class' => 'skeeks\cms\importCsvContent\ImportCsvContentHandler'
                 ]
             ]
         ],
