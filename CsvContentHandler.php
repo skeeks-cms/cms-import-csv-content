@@ -118,8 +118,10 @@ class CsvContentHandler extends CsvHandler
         $element                = new CmsContentElement();
         $element->content_id    = $this->content_id;
 
+        $result->success           = true;
         $result->data           = $this->matching;
         $result->message        = 'Элемент добавлен';
+        $result->html        = 'Элемент добавлен';
 
         return $result;
     }
