@@ -74,7 +74,7 @@ class ImportCsvContentHandler extends ImportCsvHandler
     {
         parent::init();
 
-        $this->name = \Yii::t('skeeks/importCsvContent', 'Import CSV content items');
+        $this->name = \Yii::t('skeeks/importCsvContent', '[CSV] Import content items');
     }
 
 
