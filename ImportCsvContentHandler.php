@@ -128,7 +128,10 @@ class ImportCsvContentHandler extends ImportCsvHandler
         if ($this->content_id && $this->rootFilePath && file_exists($this->rootFilePath))
         {
             echo $form->field($this, 'matching')->widget(
-                \skeeks\cms\importCsv\widgets\MatchingInput::className()
+                \skeeks\cms\importCsv\widgets\MatchingInput::className(),
+                [
+                    'columns' => $this->getAvailableFields()
+                ]
             );
 
             echo $form->field($this, 'unique_field')->listBox(
@@ -246,6 +249,113 @@ class ImportCsvContentHandler extends ImportCsvHandler
     }
 
     /**
+     * @param $fieldName
+     * @param $uniqueValue
+     * @param null $contentId
+     *
+     * @return array|null|\yii\db\ActiveRecord
+     */
+    public function getElement($fieldName, $uniqueValue, $contentId = null)
+    {
+        $element = null;
+
+        if (!$contentId)
+        {
+            $contentId = $this->content_id;
+        }
+
+        if (strpos("field_" . $fieldName, 'element.'))
+        {
+            $realName = str_replace("element.", "", $fieldName);
+            $element = CmsContentElement::find()->where([$realName => $uniqueValue])->one();
+
+        } else if (strpos("field_" . $fieldName, 'property.'))
+        {
+            $realName = str_replace("property.", "", $fieldName);
+
+            $element = CmsContentElement::find()
+
+                ->joinWith('relatedElementProperties map')
+                ->joinWith('relatedElementProperties.property property')
+
+                ->andWhere(['property.code'     => $realName])
+                ->andWhere(['map.value'         => $uniqueValue])
+
+                ->joinWith('cmsContent as ccontent')
+                ->andWhere(['ccontent.id'        => $contentId])
+
+                ->one()
+            ;
+        }
+
+        return $element;
+    }
+    /**
+     * @param $number
+     * @param $row
+     *
+     * @return array|null|CmsContentElement|\yii\db\ActiveRecord
+     * @throws Exception
+     */
+    protected function _initElement($number, $row, $contentId = null, $className = null)
+    {
+        if (!$contentId)
+        {
+            $contentId    =   $this->content_id;
+        }
+
+        if (!$className)
+        {
+            $className = CmsContentElement::className();
+        }
+
+        if (!$this->unique_field)
+        {
+            $element                = new $className();
+            $element->content_id    =   $contentId;
+        } else
+        {
+            $uniqueValue = trim($this->getValue($this->unique_field, $row));
+            if ($uniqueValue)
+            {
+                if (strpos("field_" . $this->unique_field, 'element.'))
+                {
+                    $realName = str_replace("element.", "", $this->unique_field);
+                    $element = CmsContentElement::find()->where([$realName => $uniqueValue])->one();
+
+                } else if (strpos("field_" . $this->unique_field, 'property.'))
+                {
+                    $realName = str_replace("property.", "", $this->unique_field);
+
+                    $element = $className::find()
+
+                        ->joinWith('relatedElementProperties map')
+                        ->joinWith('relatedElementProperties.property property')
+
+                        ->andWhere(['property.code'     => $realName])
+                        ->andWhere(['map.value'         => $uniqueValue])
+
+                        ->joinWith('cmsContent as ccontent')
+                        ->andWhere(['ccontent.id'        => $contentId])
+
+                        ->one()
+                    ;
+                }
+            } else
+            {
+                throw new Exception('Не задано уникальное значение');
+            }
+
+            if (!$element)
+            {
+                $element                = new $className();
+                $element->content_id    =   $contentId;
+            }
+        }
+
+        return $element;
+    }
+    /**
      * @param $number
      * @param $row
      *
@@ -258,54 +368,7 @@ class ImportCsvContentHandler extends ImportCsvHandler
         try
         {
             $isUpdate = false;
-            $element = null;
-
-            if (!$this->unique_field)
-            {
-                $element                = new CmsContentElement();
-                $element->content_id    =   $this->content_id;
-            } else
-            {
-                $uniqueValue = trim($this->getValue($this->unique_field, $row));
-                if ($uniqueValue)
-                {
-                    if (strpos("field_" . $this->unique_field, 'element.'))
-                    {
-                        $realName = str_replace("element.", "", $this->unique_field);
-                        $element = CmsContentElement::find()->where([$realName => $uniqueValue])->one();
-
-                    } else if (strpos("field_" . $this->unique_field, 'property.'))
-                    {
-                        $realName = str_replace("property.", "", $this->unique_field);
-
-                        $element = CmsContentElement::find()
-
-                            ->joinWith('relatedElementProperties map')
-                            ->joinWith('relatedElementProperties.property property')
-
-                            ->andWhere(['property.code'     => $realName])
-                            ->andWhere(['map.value'         => $uniqueValue])
-
-                            ->joinWith('cmsContent as ccontent')
-                            ->andWhere(['ccontent.id'        => $this->content_id])
-
-                            ->one()
-                        ;
-                    }
-                } else
-                {
-                    throw new Exception('Не задано уникальное значение');
-                }
-
-                if (!$element)
-                {
-                    $element                = new CmsContentElement();
-                    $element->content_id    =   $this->content_id;
-                } else
-                {
-                    $isUpdate = true;
-                }
-            }
+            $element = $this->_initElement($number, $row);
 
             foreach ($this->matching as $number => $fieldName)
             {
@@ -314,6 +377,11 @@ class ImportCsvContentHandler extends ImportCsvHandler
                 {
                     $this->_initModelByField($element, $fieldName, $row[$number]);
                 }
+            }
+
+            if (!$element->isNewRecord)
+            {
+                $isUpdate = true;
             }
 
             $element->validate();
