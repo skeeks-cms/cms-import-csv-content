@@ -158,7 +158,7 @@ class ImportCsvContentHandler extends ImportCsvHandler
             {
                 if ($property = $cmsContentElement->relatedPropertiesModel->getRelatedProperty($realName))
                 {
-                    $content_id = $property->createPropertyType()->content_id;
+                    $content_id = $property->handler->content_id;
 
                     $brand = CmsContentElement::find()
                                 ->where(['content_id' => $content_id])
@@ -355,6 +355,7 @@ class ImportCsvContentHandler extends ImportCsvHandler
 
         return $element;
     }
+
     /**
      * @param $number
      * @param $row
