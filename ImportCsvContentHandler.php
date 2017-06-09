@@ -447,4 +447,35 @@ HTML;
         return $result;
     }
 
+
+    public function execute()
+    {
+        ini_set("memory_limit","8192M");
+        set_time_limit(0);
+
+
+        $rows = $this->getCsvColumnsData($this->startRow, $this->endRow);
+        $results = [];
+        $totalSuccess = 0;
+        $totalErrors = 0;
+
+        $this->result->stdout("\tCSV import: c {$this->startRow} по {$this->endRow}\n");
+
+        foreach ($rows as $number => $data)
+        {
+            $result = $this->import($number, $data);
+            if ($result->success)
+            {
+                $this->result->stdout("\tСтрока: {$number}: {$result->message}\n");
+                $totalSuccess++;
+            } else
+            {
+                $this->result->stdout("\tСтрока: {$number}: ошибка: {$result->message}\n");
+                $totalErrors++;
+            }
+            $results[$number] = $result;
+        }
+
+        return $this->result;
+    }
 }
