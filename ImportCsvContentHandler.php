@@ -13,6 +13,8 @@ use skeeks\cms\importCsv\ImportCsvHandler;
 use skeeks\cms\importCsvContent\widgets\MatchingInput;
 use skeeks\cms\models\CmsContent;
 use skeeks\cms\models\CmsContentElement;
+use skeeks\cms\models\CmsContentElementProperty;
+use skeeks\cms\models\CmsContentProperty;
 use skeeks\cms\models\CmsContentPropertyEnum;
 use skeeks\cms\relatedProperties\PropertyType;
 use skeeks\cms\relatedProperties\propertyTypes\PropertyTypeElement;
@@ -273,19 +275,15 @@ class ImportCsvContentHandler extends ImportCsvHandler
         {
             $realName = str_replace("property.", "", $fieldName);
 
-            $element = CmsContentElement::find()
+            /**
+             * @var $property CmsContentProperty
+             */
+            $property = CmsContentProperty::find()->where(['code' => $realName])->one();
+            $query = CmsContentElement::find();
+            CmsContentElement::filterByProperty($query, $property, $uniqueValue);
 
-                ->joinWith('relatedElementProperties map')
-                ->joinWith('relatedElementProperties.property property')
-
-                ->andWhere(['property.code'     => $realName])
-                ->andWhere(['map.value'         => $uniqueValue])
-
-                ->joinWith('cmsContent as ccontent')
-                ->andWhere(['ccontent.id'        => $contentId])
-
-                ->one()
-            ;
+            //print_r($query->createCommand()->rawSql);die;
+            $element = $query->one();
         }
 
         return $element;
@@ -327,7 +325,17 @@ class ImportCsvContentHandler extends ImportCsvHandler
                 {
                     $realName = str_replace("property.", "", $this->unique_field);
 
-                    $element = $className::find()
+                    /**
+                     * @var $property CmsContentProperty
+                     */
+                    $property = CmsContentProperty::find()->where(['code' => $realName])->one();
+                    $query = CmsContentElement::find();
+                    CmsContentElement::filterByProperty($query, $property, $uniqueValue);
+
+                    $element = $query->one();
+                    //print_r($query->createCommand()->rawSql);die;
+
+                    /*$element = $className::find()
 
                         ->joinWith('relatedElementProperties map')
                         ->joinWith('relatedElementProperties.property property')
@@ -339,7 +347,7 @@ class ImportCsvContentHandler extends ImportCsvHandler
                         ->andWhere(['ccontent.id'        => $contentId])
 
                         ->one()
-                    ;
+                    ;*/
                 }
             } else
             {
