@@ -329,8 +329,8 @@ class ImportCsvContentHandler extends ImportCsvHandler
                      * @var $property CmsContentProperty
                      */
                     $property = CmsContentProperty::find()->where(['code' => $realName])->one();
-                    $query = CmsContentElement::find();
-                    CmsContentElement::filterByProperty($query, $property, $uniqueValue);
+                    $query = $className::find();
+                    $className::filterByProperty($query, $property, $uniqueValue);
 
                     $element = $query->one();
                     //print_r($query->createCommand()->rawSql);die;
