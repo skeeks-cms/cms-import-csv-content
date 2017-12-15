@@ -97,10 +97,10 @@ class ImportCsvContentHandler extends ImportCsvHandler
 
             [['matching'], 'safe'],
             [['matching'], function($attribute) {
-                if (!in_array('element.name', $this->$attribute))
+                /*if (!in_array('element.name', $this->$attribute))
                 {
                     $this->addError($attribute, "Укажите соответствие названия");
-                }
+                }*/
             }]
         ]);
     }
