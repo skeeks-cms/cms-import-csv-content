@@ -48,7 +48,8 @@ class ImportCsvContentHandler extends ImportCsvHandler
         {
             $fields['element.' . $key] = $name;
         }
-
+        
+        $element->relatedPropertiesModel->initAllProperties();
         foreach ($element->relatedPropertiesModel->attributeLabels() as $key => $name)
         {
             $fields['property.' . $key] = $name . " [свойство]";
@@ -425,6 +426,7 @@ class ImportCsvContentHandler extends ImportCsvHandler
 
                 $result->message        =   $isUpdate === true ? "Элемент обновлен" : 'Элемент создан' ;
 
+                $element->relatedPropertiesModel->initAllProperties();
                 $rp = Json::encode($element->relatedPropertiesModel->toArray());
                 $rp = '';
                 $result->html           =   <<<HTML
@@ -440,6 +442,8 @@ HTML;
 
             $result->data           =   $this->matching;
 
+            unset($element->relatedPropertiesModel);
+            unset($element);
 
         } catch (\Exception $e)
         {
@@ -456,12 +460,18 @@ HTML;
     }
 
 
+    public function memoryUsage($usage, $base_memory_usage) {
+        return \Yii::$app->formatter->asSize($usage - $base_memory_usage);
+    }
+
     public function execute()
     {
         ini_set("memory_limit","8192M");
         set_time_limit(0);
 
-
+        $base_memory_usage = memory_get_usage();
+        $this->memoryUsage(memory_get_usage(), $base_memory_usage);
+        
         $rows = $this->getCsvColumnsData($this->startRow, $this->endRow);
         $results = [];
         $totalSuccess = 0;
@@ -481,7 +491,11 @@ HTML;
                 $this->result->stdout("\tСтрока: {$number}: ошибка: {$result->message}\n");
                 $totalErrors++;
             }
-            $results[$number] = $result;
+
+            unset($result);
+            echo $this->memoryUsage(memory_get_usage(), $base_memory_usage);
+
+            //$results[$number] = $result;
         }
 
         return $this->result;
