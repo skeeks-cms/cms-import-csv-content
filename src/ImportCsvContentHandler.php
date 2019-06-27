@@ -19,6 +19,7 @@ use skeeks\cms\models\CmsContentPropertyEnum;
 use skeeks\cms\relatedProperties\PropertyType;
 use skeeks\cms\relatedProperties\propertyTypes\PropertyTypeElement;
 use skeeks\cms\relatedProperties\propertyTypes\PropertyTypeList;
+use yii\base\DynamicModel;
 use yii\base\Exception;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Json;
@@ -34,7 +35,34 @@ use yii\widgets\ActiveForm;
 class ImportCsvContentHandler extends ImportCsvHandler
 {
     public $content_id = null;
-    public $unique_field = null;
+
+
+    /*public function getAttributeValueCallbacs()
+    {
+
+        return [
+            'trim' => 'Удалить пробелы по краям',
+            'trim' => 'Удалить пробелы по краям',
+        ];
+    }*/
+
+    public function getUnique_field()
+    {
+        if (!$this->matching) {
+            return null;
+        }
+
+        foreach ((array) $this->matching as $key => $columnSetting)
+        {
+            if (is_array($columnSetting)) {
+                if (isset($columnSetting['unique']) && $columnSetting['unique']) {
+                    return $columnSetting['code'];
+                }
+            }
+        }
+
+        return null;
+    }
 
     public function getAvailableFields()
     {
@@ -43,19 +71,28 @@ class ImportCsvContentHandler extends ImportCsvHandler
         ]);
 
         $fields = [];
+        $fields['element.active'] = "Активность";
 
-        foreach ($element->attributeLabels() as $key => $name)
-        {
-            $fields['element.' . $key] = $name;
-        }
-        
+        $fields['element.name'] = "Название";
+        $fields['element.description_short'] = "Короткое описание";
+        $fields['element.description_full'] = "Подробное описание";
+
+        $fields['element.tree_id'] = "ID главного раздела";
+
+        $fields['element.meta_title'] = "Мета заголовок";
+        $fields['element.meta_description'] = "Мета description";
+        $fields['element.meta_keywords'] = "Мета ключевые слова";
+
+        $fields['image'] = 'Ссылка на главное изображение';
+        //$fields['main_image_images'] = 'Ссылка на главное изображение и второстепенные';
+        //$fields['images'] = 'Ссылки на второстепенные изображения';
+
         $element->relatedPropertiesModel->initAllProperties();
         foreach ($element->relatedPropertiesModel->attributeLabels() as $key => $name)
         {
             $fields['property.' . $key] = $name . " [свойство]";
         }
 
-        $fields['image'] = 'Ссылка на главное изображение';
 
         return array_merge(['' => ' - '], $fields);
     }
@@ -94,8 +131,6 @@ class ImportCsvContentHandler extends ImportCsvHandler
             ['content_id' , 'required'],
             ['content_id' , 'integer'],
 
-            ['unique_field' , 'string'],
-
             [['matching'], 'safe'],
             [['matching'], function($attribute) {
                 /*if (!in_array('element.name', $this->$attribute))
@@ -111,7 +146,6 @@ class ImportCsvContentHandler extends ImportCsvHandler
         return ArrayHelper::merge(parent::attributeLabels(), [
             'content_id'        => \Yii::t('skeeks/importCsvContent', 'Контент'),
             'matching'          => \Yii::t('skeeks/importCsvContent', 'Preview content and configuration compliance'),
-            'unique_field'      => \Yii::t('skeeks/importCsvContent', 'Уникальная колонка'),
         ]);
     }
 
@@ -137,10 +171,10 @@ class ImportCsvContentHandler extends ImportCsvHandler
                 ]
             );
 
-            echo $form->field($this, 'unique_field')->listBox(
+            /*echo $form->field($this, 'unique_field')->listBox(
                 array_merge(['' => ' - '], $this->getAvailableFields()), [
                 'size' => 1,
-            ]);
+            ]);*/
         }
     }
 
@@ -219,16 +253,20 @@ class ImportCsvContentHandler extends ImportCsvHandler
      */
     public function getColumnNumber($code)
     {
-        if (in_array($code, $this->matching))
-        {
+        //if (in_array($code, $this->matching))
+        //{
             foreach ($this->matching as $number => $codeValue)
             {
+                if (is_array($codeValue)) {
+                    $codeValue = $codeValue['code'];
+                }
+
                 if ($codeValue == $code)
                 {
                     return (int) $number;
                 }
             }
-        }
+        //}
 
         return null;
     }
@@ -245,6 +283,9 @@ class ImportCsvContentHandler extends ImportCsvHandler
 
         if ($number !== null)
         {
+            /*$model = new DynamicModel();
+            $model->defineAttribute('value', $row[$number]);
+            $model->addRule(['value'], '');*/
             return $row[$number];
         }
 
@@ -289,6 +330,8 @@ class ImportCsvContentHandler extends ImportCsvHandler
 
         return $element;
     }
+
+
     /**
      * @param $number
      * @param $row
@@ -383,9 +426,23 @@ class ImportCsvContentHandler extends ImportCsvHandler
             foreach ($this->matching as $number => $fieldName)
             {
                 //Выбрано соответствие
+
+                $is_update_rewrite = true;
+
                 if ($fieldName)
                 {
-                    $this->_initModelByField($element, $fieldName, $row[$number]);
+                    if (is_array($fieldName)) {
+                        $fieldName = $fieldName['code'];
+                        $is_update_rewrite = ArrayHelper::getValue($fieldName, 'is_update_rewrite');
+                    }
+                    if ($element->isNewRecord) {
+                        $this->_initModelByField($element, $fieldName, $row[$number]);
+                    } else {
+                        if ($is_update_rewrite) {
+                            $this->_initModelByField($element, $fieldName, $row[$number]);
+                        }
+                    }
+
                 }
             }
 
@@ -411,7 +468,9 @@ class ImportCsvContentHandler extends ImportCsvHandler
                 {
                     try
                     {
-                        $file = \Yii::$app->storage->upload($imageUrl, [
+                        $images = explode(",", $imageUrl);
+
+                        $file = \Yii::$app->storage->upload($images[0], [
                             'name' => $element->name
                         ]);
 
@@ -442,7 +501,7 @@ HTML;
 
             $result->data           =   $this->matching;
 
-            unset($element->relatedPropertiesModel);
+            //unset($element->relatedPropertiesModel);
             unset($element);
 
         } catch (\Exception $e)
