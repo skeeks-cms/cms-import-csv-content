@@ -201,8 +201,9 @@ class ImportCsvContentHandler extends ImportCsvHandler
 
                     if ($is_arr)
                     {
-                        $valueList = explode(', ', $value);
+                        $valueList = explode(',', $value);
                         foreach ($valueList as $val) {
+                            $val =  trim($val);
                             $brand = CmsContentElement::find()
                                 ->where(['content_id' => $content_id])
                                 ->andWhere(['name' => $val])
@@ -255,15 +256,17 @@ class ImportCsvContentHandler extends ImportCsvHandler
 
                     if ($is_arr)
                     {
-                        $valueList = explode(', ', $value);
+                        $valueList = explode(',', $value);
+                        $enums = [];
                         foreach ($valueList as $val) {
+                            $val =  trim($val);
                             if ( $enum = $property->getEnums()->andWhere(['value' => $val])->one() )
                             {
 
                             } else
                             {
                                 $enum = new CmsContentPropertyEnum();
-                                $enum->value        = $value;
+                                $enum->value        = $val;
                                 $enum->property_id  = $property->id;
                                 $enum->save();
                             }
@@ -310,17 +313,17 @@ class ImportCsvContentHandler extends ImportCsvHandler
     {
         //if (in_array($code, $this->matching))
         //{
-            foreach ($this->matching as $number => $codeValue)
-            {
-                if (is_array($codeValue)) {
-                    $codeValue = $codeValue['code'];
-                }
-
-                if ($codeValue == $code)
-                {
-                    return (int) $number;
-                }
+        foreach ($this->matching as $number => $codeValue)
+        {
+            if (is_array($codeValue)) {
+                $codeValue = $codeValue['code'];
             }
+
+            if ($codeValue == $code)
+            {
+                return (int) $number;
+            }
+        }
         //}
 
         return null;
@@ -413,6 +416,7 @@ class ImportCsvContentHandler extends ImportCsvHandler
         } else
         {
             $uniqueValue = trim($this->getValue($this->unique_field, $row));
+
             if ($uniqueValue)
             {
                 if (strpos("field_" . $this->unique_field, 'element.'))
