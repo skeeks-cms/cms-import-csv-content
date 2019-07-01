@@ -90,7 +90,8 @@ class ImportCsvContentHandler extends ImportCsvHandler
         $element->relatedPropertiesModel->initAllProperties();
         foreach ($element->relatedPropertiesModel->attributeLabels() as $key => $name)
         {
-            $fields['property.' . $key] = $name . " [свойство]";
+            $p = $element->relatedPropertiesModel->getRelatedProperty($key);
+            $fields['property.' . $key] = $name . " [свойство][" . $p->code . "]";
         }
 
 
