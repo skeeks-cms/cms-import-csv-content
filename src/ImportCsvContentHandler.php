@@ -197,24 +197,51 @@ class ImportCsvContentHandler extends ImportCsvHandler
                 if ($property = $cmsContentElement->relatedPropertiesModel->getRelatedProperty($realName))
                 {
                     $content_id = $property->handler->content_id;
+                    $is_arr = strpos($value,',');
 
-                    $brand = CmsContentElement::find()
+                    if ($is_arr)
+                    {
+                        $valueList = explode(', ', $value);
+                        foreach ($valueList as $val) {
+                            $brand = CmsContentElement::find()
                                 ->where(['content_id' => $content_id])
-                                ->andWhere(['name' => $value])
+                                ->andWhere(['name' => $val])
                                 ->one()
                             ;
 
-                    if (!$brand)
-                    {
-                        $brand = new CmsContentElement();
-                        $brand->name = $value;
-                        $brand->content_id = $content_id;
-                        $brand->save();
+                            if (!$brand)
+                            {
+                                $brand = new CmsContentElement();
+                                $brand->name = $val;
+                                $brand->content_id = $content_id;
+                                $brand->save();
+                            }
+                            $brands[] =  $brand->id;
+                        }
+                        if ($brands)
+                        {
+                            $cmsContentElement->relatedPropertiesModel->setAttribute($realName, $brands);
+                        }
                     }
+                    else {
+                        $brand = CmsContentElement::find()
+                            ->where(['content_id' => $content_id])
+                            ->andWhere(['name' => $value])
+                            ->one()
+                        ;
 
-                    if ($brand && !$brand->isNewRecord)
-                    {
-                        $cmsContentElement->relatedPropertiesModel->setAttribute($realName, $brand->id);
+                        if (!$brand)
+                        {
+                            $brand = new CmsContentElement();
+                            $brand->name = $value;
+                            $brand->content_id = $content_id;
+                            $brand->save();
+                        }
+
+                        if ($brand && !$brand->isNewRecord)
+                        {
+                            $cmsContentElement->relatedPropertiesModel->setAttribute($realName, $brand->id);
+                        }
                     }
 
 
@@ -224,20 +251,47 @@ class ImportCsvContentHandler extends ImportCsvHandler
             {
                 if ($property = $cmsContentElement->relatedPropertiesModel->getRelatedProperty($realName))
                 {
-                    if ( $enum = $property->getEnums()->andWhere(['value' => $value])->one() )
-                    {
+                    $is_arr = strpos($value,',');
 
-                    } else
+                    if ($is_arr)
                     {
-                        $enum = new CmsContentPropertyEnum();
-                        $enum->value        = $value;
-                        $enum->property_id  = $property->id;
-                        $enum->save();
+                        $valueList = explode(', ', $value);
+                        foreach ($valueList as $val) {
+                            if ( $enum = $property->getEnums()->andWhere(['value' => $val])->one() )
+                            {
+
+                            } else
+                            {
+                                $enum = new CmsContentPropertyEnum();
+                                $enum->value        = $value;
+                                $enum->property_id  = $property->id;
+                                $enum->save();
+                            }
+
+                            $enums[] = $enum->id;
+
+                        }
+                        if ($enums)
+                        {
+                            $cmsContentElement->relatedPropertiesModel->setAttribute($realName, $enums);
+                        }
                     }
+                    else {
+                        if ( $enum = $property->getEnums()->andWhere(['value' => $value])->one() )
+                        {
 
-                    if ($enum && !$enum->isNewRecord)
-                    {
-                        $cmsContentElement->relatedPropertiesModel->setAttribute($realName, $enum->id);
+                        } else
+                        {
+                            $enum = new CmsContentPropertyEnum();
+                            $enum->value        = $value;
+                            $enum->property_id  = $property->id;
+                            $enum->save();
+                        }
+
+                        if ($enum && !$enum->isNewRecord)
+                        {
+                            $cmsContentElement->relatedPropertiesModel->setAttribute($realName, $enum->id);
+                        }
                     }
                 }
             } else
@@ -531,7 +585,7 @@ HTML;
 
         $base_memory_usage = memory_get_usage();
         $this->memoryUsage(memory_get_usage(), $base_memory_usage);
-        
+
         $rows = $this->getCsvColumnsData($this->startRow, $this->endRow);
         $results = [];
         $totalSuccess = 0;
