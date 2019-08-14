@@ -537,7 +537,7 @@ class ImportCsvContentHandler extends ImportCsvHandler
 
                     } catch (\Exception $e)
                     {
-                        //\Yii::error('Not upload image to: ' . $cmsContentElement->id . " ({$realUrl})", 'import');
+                        //\Yii::error('Not upload image to: ' . $e->getMessage() . " ({$realUrl})", 'import');
                     }
                 }
 
