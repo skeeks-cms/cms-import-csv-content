@@ -532,12 +532,37 @@ class ImportCsvContentHandler extends ImportCsvHandler
                         $file = \Yii::$app->storage->upload($images[0], [
                             'name' => $element->name
                         ]);
+                        if (count($images) > 1  && !$element->images) {
+                            array_shift($images); // - первый элемент уже сохранен как Главное изображение
+
+                            foreach ($images as $image) {
+                                $fileGal = \Yii::$app->storage->upload($image, [
+                                    'name' => $element->name
+                                ]);
+
+                                if ($fileGal->getIsNewRecord())
+                                {
+                                    $element->link('images', $fileGal);
+                                }
+                                else {
+
+                                    $newGalleryItem = new CmsContentElementImage();
+                                    $newGalleryItem->storage_file_id = $fileGal->id;
+                                    $newGalleryItem->content_element_id = $element->id;
+                                    if (!$newGalleryItem->save())
+                                        throw new Exception(print_r($newGalleryItem->errors, true));
+
+                                }
+                            }
+                        }
 
                         $element->link('image', $file);
 
                     } catch (\Exception $e)
                     {
-                        //\Yii::error('Not upload image to: ' . $e->getMessage() . " ({$realUrl})", 'import');
+                        \Yii::error('Ошибка при создании галереи '.$e->getMessage(), self::class);
+                        $this->stdout("\tОшибка при создании галереи {$e->getMessage()}\n", Console::FG_RED);
+                        die;
                     }
                 }
 
