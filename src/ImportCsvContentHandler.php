@@ -197,13 +197,16 @@ class ImportCsvContentHandler extends ImportCsvHandler
                 if ($property = $cmsContentElement->relatedPropertiesModel->getRelatedProperty($realName))
                 {
                     $content_id = $property->handler->content_id;
-                    $is_arr = strpos($value,',');
+                    $valueList = explode(',', $value);
 
-                    if ($is_arr)
+                    if (count($valueList) > 1)
                     {
-                        $valueList = explode(',', $value);
                         foreach ($valueList as $val) {
                             $val =  trim($val);
+                            if (!$val) {
+                                continue;
+                            }
+
                             $brand = CmsContentElement::find()
                                 ->where(['content_id' => $content_id])
                                 ->andWhere(['name' => $val])
@@ -252,14 +255,17 @@ class ImportCsvContentHandler extends ImportCsvHandler
             {
                 if ($property = $cmsContentElement->relatedPropertiesModel->getRelatedProperty($realName))
                 {
-                    $is_arr = strpos($value,',');
+                    $valueList = explode(',', $value);
 
-                    if ($is_arr)
+                    if (count($valueList) > 1)
                     {
-                        $valueList = explode(',', $value);
                         $enums = [];
                         foreach ($valueList as $val) {
                             $val =  trim($val);
+                            if (!$val) {
+                                continue;
+                            }
+
                             if ( $enum = $property->getEnums()->andWhere(['value' => $val])->one() )
                             {
 
@@ -540,18 +546,11 @@ class ImportCsvContentHandler extends ImportCsvHandler
                                     'name' => $element->name
                                 ]);
 
-                                if ($fileGal->getIsNewRecord())
-                                {
-                                    $element->link('images', $fileGal);
-                                }
-                                else {
-
-                                    $newGalleryItem = new CmsContentElementImage();
-                                    $newGalleryItem->storage_file_id = $fileGal->id;
-                                    $newGalleryItem->content_element_id = $element->id;
-                                    if (!$newGalleryItem->save())
-                                        throw new Exception(print_r($newGalleryItem->errors, true));
-
+                                $newGalleryItem = new CmsContentElementImage();
+                                $newGalleryItem->storage_file_id = $fileGal->id;
+                                $newGalleryItem->content_element_id = $element->id;
+                                if (!$newGalleryItem->save()) {
+                                    throw new Exception(print_r($newGalleryItem->errors, true));
                                 }
                             }
                         }
