@@ -191,6 +191,8 @@ class ImportCsvContentHandler extends ImportCsvHandler
 
             $realName = str_replace("property.", "", $fieldName);
             $property = $cmsContentElement->relatedPropertiesModel->getRelatedProperty($realName);
+            $brands = [];
+            $brand = '';
 
             if ($property->property_type == PropertyType::CODE_ELEMENT)
             {
