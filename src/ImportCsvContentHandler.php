@@ -191,30 +191,63 @@ class ImportCsvContentHandler extends ImportCsvHandler
 
             $realName = str_replace("property.", "", $fieldName);
             $property = $cmsContentElement->relatedPropertiesModel->getRelatedProperty($realName);
+            $brands = [];
+            $brand = '';
 
             if ($property->property_type == PropertyType::CODE_ELEMENT)
             {
                 if ($property = $cmsContentElement->relatedPropertiesModel->getRelatedProperty($realName))
                 {
                     $content_id = $property->handler->content_id;
+                    $valueList = explode(',', $value);
 
-                    $brand = CmsContentElement::find()
+                    if (count($valueList) > 1)
+                    {
+                        foreach ($valueList as $val) {
+                            $val =  trim($val);
+                            if (!$val) {
+                                continue;
+                            }
+
+                            $brand = CmsContentElement::find()
                                 ->where(['content_id' => $content_id])
-                                ->andWhere(['name' => $value])
+                                ->andWhere(['name' => $val])
                                 ->one()
                             ;
 
-                    if (!$brand)
-                    {
-                        $brand = new CmsContentElement();
-                        $brand->name = $value;
-                        $brand->content_id = $content_id;
-                        $brand->save();
+                            if (!$brand)
+                            {
+                                $brand = new CmsContentElement();
+                                $brand->name = $val;
+                                $brand->content_id = $content_id;
+                                $brand->save();
+                            }
+                            $brands[] =  $brand->id;
+                        }
+                        if ($brands)
+                        {
+                            $cmsContentElement->relatedPropertiesModel->setAttribute($realName, $brands);
+                        }
                     }
+                    else {
+                        $brand = CmsContentElement::find()
+                            ->where(['content_id' => $content_id])
+                            ->andWhere(['name' => $value])
+                            ->one()
+                        ;
 
-                    if ($brand && !$brand->isNewRecord)
-                    {
-                        $cmsContentElement->relatedPropertiesModel->setAttribute($realName, $brand->id);
+                        if (!$brand)
+                        {
+                            $brand = new CmsContentElement();
+                            $brand->name = $value;
+                            $brand->content_id = $content_id;
+                            $brand->save();
+                        }
+
+                        if ($brand && !$brand->isNewRecord)
+                        {
+                            $cmsContentElement->relatedPropertiesModel->setAttribute($realName, $brand->id);
+                        }
                     }
 
 
@@ -224,20 +257,52 @@ class ImportCsvContentHandler extends ImportCsvHandler
             {
                 if ($property = $cmsContentElement->relatedPropertiesModel->getRelatedProperty($realName))
                 {
-                    if ( $enum = $property->getEnums()->andWhere(['value' => $value])->one() )
-                    {
+                    $valueList = explode(',', $value);
 
-                    } else
+                    if (count($valueList) > 1)
                     {
-                        $enum = new CmsContentPropertyEnum();
-                        $enum->value        = $value;
-                        $enum->property_id  = $property->id;
-                        $enum->save();
+                        $enums = [];
+                        foreach ($valueList as $val) {
+                            $val =  trim($val);
+                            if (!$val) {
+                                continue;
+                            }
+
+                            if ( $enum = $property->getEnums()->andWhere(['value' => $val])->one() )
+                            {
+
+                            } else
+                            {
+                                $enum = new CmsContentPropertyEnum();
+                                $enum->value        = $val;
+                                $enum->property_id  = $property->id;
+                                $enum->save();
+                            }
+
+                            $enums[] = $enum->id;
+
+                        }
+                        if ($enums)
+                        {
+                            $cmsContentElement->relatedPropertiesModel->setAttribute($realName, $enums);
+                        }
                     }
+                    else {
+                        if ( $enum = $property->getEnums()->andWhere(['value' => $value])->one() )
+                        {
 
-                    if ($enum && !$enum->isNewRecord)
-                    {
-                        $cmsContentElement->relatedPropertiesModel->setAttribute($realName, $enum->id);
+                        } else
+                        {
+                            $enum = new CmsContentPropertyEnum();
+                            $enum->value        = $value;
+                            $enum->property_id  = $property->id;
+                            $enum->save();
+                        }
+
+                        if ($enum && !$enum->isNewRecord)
+                        {
+                            $cmsContentElement->relatedPropertiesModel->setAttribute($realName, $enum->id);
+                        }
                     }
                 }
             } else
@@ -256,17 +321,17 @@ class ImportCsvContentHandler extends ImportCsvHandler
     {
         //if (in_array($code, $this->matching))
         //{
-            foreach ($this->matching as $number => $codeValue)
-            {
-                if (is_array($codeValue)) {
-                    $codeValue = $codeValue['code'];
-                }
-
-                if ($codeValue == $code)
-                {
-                    return (int) $number;
-                }
+        foreach ($this->matching as $number => $codeValue)
+        {
+            if (is_array($codeValue)) {
+                $codeValue = $codeValue['code'];
             }
+
+            if ($codeValue == $code)
+            {
+                return (int) $number;
+            }
+        }
         //}
 
         return null;
@@ -359,6 +424,7 @@ class ImportCsvContentHandler extends ImportCsvHandler
         } else
         {
             $uniqueValue = trim($this->getValue($this->unique_field, $row));
+
             if ($uniqueValue)
             {
                 if (strpos("field_" . $this->unique_field, 'element.'))
@@ -474,12 +540,30 @@ class ImportCsvContentHandler extends ImportCsvHandler
                         $file = \Yii::$app->storage->upload($images[0], [
                             'name' => $element->name
                         ]);
+                        if (count($images) > 1  && !$element->images) {
+                            array_shift($images); // - первый элемент уже сохранен как Главное изображение
+
+                            foreach ($images as $image) {
+                                $fileGal = \Yii::$app->storage->upload($image, [
+                                    'name' => $element->name
+                                ]);
+
+                                $newGalleryItem = new CmsContentElementImage();
+                                $newGalleryItem->storage_file_id = $fileGal->id;
+                                $newGalleryItem->content_element_id = $element->id;
+                                if (!$newGalleryItem->save()) {
+                                    throw new Exception(print_r($newGalleryItem->errors, true));
+                                }
+                            }
+                        }
 
                         $element->link('image', $file);
 
                     } catch (\Exception $e)
                     {
-                        //\Yii::error('Not upload image to: ' . $e->getMessage() . " ({$realUrl})", 'import');
+                        \Yii::error('Ошибка при создании галереи '.$e->getMessage(), self::class);
+                        $this->stdout("\tОшибка при создании галереи {$e->getMessage()}\n", Console::FG_RED);
+                        die;
                     }
                 }
 
@@ -531,7 +615,7 @@ HTML;
 
         $base_memory_usage = memory_get_usage();
         $this->memoryUsage(memory_get_usage(), $base_memory_usage);
-        
+
         $rows = $this->getCsvColumnsData($this->startRow, $this->endRow);
         $results = [];
         $totalSuccess = 0;
