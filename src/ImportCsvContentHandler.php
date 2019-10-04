@@ -21,6 +21,8 @@ use skeeks\cms\relatedProperties\PropertyType;
 use yii\base\Exception;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Json;
+use yii\helpers\Url;
+use yii\httpclient\Client;
 use yii\widgets\ActiveForm;
 
 /**
@@ -461,6 +463,22 @@ class ImportCsvContentHandler extends ImportCsvHandler
         return $this;
     }
 
+    private function _fileHandler($fileSrc)
+    {
+        /*if (strpos($fileSrc, 'downloader.disk.yandex.ru')) {
+
+            $yandex_download = 'https://cloud-api.yandex.net/v1/disk/public/resources/download?public_key=' . $fileSrc;
+
+            $client = new Client();
+            $request = $client->createRequest()->setUrl($yandex_download)
+                ->addHeaders(['Accept' => 'application/json; q=1.0, *; q=0.1']);
+            var_dump($request);die();
+
+            $response = $request->send();
+        }*/
+
+        return $fileSrc;
+    }
     /**
      * @param CmsContentElement $element
      * @param                   $row
@@ -471,14 +489,19 @@ class ImportCsvContentHandler extends ImportCsvHandler
     {
         $imageData = $this->getValue('image', $row);
         $images = explode(",", $imageData);
-        
+
+
+
         if (count($images) == 0) {
             return $this;
         }
-        
+
         $firstImageUrl = $images[0];
-        if (!$element->image && $firstImageUrl) {
-            $file = \Yii::$app->storage->upload($firstImageUrl, [
+
+        if (
+            //!$element->image &&
+            $firstImageUrl) {
+            $file = \Yii::$app->storage->upload($this->_fileHandler($firstImageUrl), [
                 'name' => $element->name,
             ]);
             if ($file) {
@@ -503,7 +526,7 @@ class ImportCsvContentHandler extends ImportCsvHandler
         
         foreach ($images as $image) {
             $image = trim($image);
-            $file = \Yii::$app->storage->upload($image, [
+            $file = \Yii::$app->storage->upload($this->_fileHandler($image), [
                 'name' => $element->name,
             ]);
 
