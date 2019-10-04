@@ -499,7 +499,7 @@ class ImportCsvContentHandler extends ImportCsvHandler
         $firstImageUrl = $images[0];
 
         if (
-            //!$element->image &&
+            !$element->image &&
             $firstImageUrl) {
             $file = \Yii::$app->storage->upload($this->_fileHandler($firstImageUrl), [
                 'name' => $element->name,
