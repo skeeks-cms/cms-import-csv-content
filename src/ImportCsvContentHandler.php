@@ -445,9 +445,11 @@ class ImportCsvContentHandler extends ImportCsvHandler
             $is_update_rewrite = true;
 
             if ($fieldName) {
+
                 if (is_array($fieldName)) {
+                    $is_update_rewrite = (bool) ArrayHelper::getValue($fieldName, 'is_update_rewrite');
                     $fieldName = $fieldName['code'];
-                    $is_update_rewrite = ArrayHelper::getValue($fieldName, 'is_update_rewrite');
+
                 }
                 if ($element->isNewRecord) {
                     $this->_initModelByField($element, $fieldName, $row[$number]);
