@@ -639,4 +639,46 @@ HTML;
 
         return $this->result;
     }
+
+
+    public function execute2()
+    {
+        ini_set("memory_limit", "8192M");
+        set_time_limit(0);
+
+        $base_memory_usage = memory_get_usage();
+        $this->memoryUsage(memory_get_usage(), $base_memory_usage);
+
+        $rows = $this->getCsvColumnsData($this->startRow, $this->endRow);
+        $results = [];
+        $totalSuccess = 0;
+        $totalErrors = 0;
+
+        $this->result->stdout("\tCSV import: c {$this->startRow} по {$this->endRow}\n");
+
+        $counter = 0;
+        while(true) {
+            $counter++;
+
+            $this->result->stdout("\tСтрока: {$counter}: \n");
+            if ($counter < $this->startRow) {
+                continue;
+            }
+
+            if ($counter > $this->endRow) {
+                break;
+            }
+            
+            $rows = $this->getCsvColumnsData($counter, $counter);
+            if ($rows) {
+                $first = array_shift($rows);
+                print_r($first);
+            }
+
+        }
+
+        
+
+        return $this->result;
+    }
 }
