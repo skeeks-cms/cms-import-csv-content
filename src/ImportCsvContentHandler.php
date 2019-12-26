@@ -35,6 +35,8 @@ use yii\widgets\ActiveForm;
 class ImportCsvContentHandler extends ImportCsvHandler
 {
     public $content_id = null;
+    public $new_elements_is_active = false;
+    public $titles_row_number = false;
 
 
     /*public function getAttributeValueCallbacs()
@@ -129,6 +131,9 @@ class ImportCsvContentHandler extends ImportCsvHandler
             ['content_id', 'required'],
             ['content_id', 'integer'],
 
+            ['new_elements_is_active', 'boolean'],
+            ['titles_row_number', 'integer'],
+
             [['matching'], 'safe'],
             [
                 ['matching'],
@@ -146,7 +151,15 @@ class ImportCsvContentHandler extends ImportCsvHandler
     {
         return ArrayHelper::merge(parent::attributeLabels(), [
             'content_id' => \Yii::t('skeeks/importCsvContent', 'Контент'),
+            'new_elements_is_active' => \Yii::t('skeeks/importCsvContent', 'Созданные товары будут активны?'),
             'matching'   => \Yii::t('skeeks/importCsvContent', 'Preview content and configuration compliance'),
+            'titles_row_number'   => \Yii::t('skeeks/importCsvContent', 'Номер строки которая содержит заголовки'),
+        ]);
+    }
+    public function attributeHints()
+    {
+        return ArrayHelper::merge(parent::attributeHints(), [
+            'new_elements_is_active' => \Yii::t('skeeks/importCsvContent', 'Если выбрано нет, то новосозданные товары будут деактивированы, и вы сможете активировать их для показа на сайте после ручной проверки.'),
         ]);
     }
 
@@ -157,6 +170,8 @@ class ImportCsvContentHandler extends ImportCsvHandler
     {
         parent::renderConfigForm($form);
 
+        echo $form->field($this, 'titles_row_number');
+        echo $form->field($this, 'new_elements_is_active')->listBox(\Yii::$app->formatter->booleanFormat);
         echo $form->field($this, 'content_id')->listBox(
             array_merge(['' => ' - '], CmsContent::getDataForSelect()), [
             'size'             => 1,
@@ -419,8 +434,16 @@ class ImportCsvContentHandler extends ImportCsvHandler
             }
 
             if (!$element) {
+                /**
+                 * @var $element CmsContentElement
+                 */
                 $element = new $className();
                 $element->content_id = $contentId;
+                if ($this->new_elements_is_active) {
+                    $element->active = "Y";
+                } else {
+                    $element->active = "N";
+                }
             }
         }
 
@@ -606,6 +629,41 @@ HTML;
         return \Yii::$app->formatter->asSize($usage - $base_memory_usage);
     }
 
+    protected $_headersData = [];
+
+    /**
+     * @param array $row
+     * @return array
+     */
+    public function getRowDataWithHeaders($row = [])
+    {
+        $result = [];
+
+        if (!$this->titles_row_number && $this->titles_row_number != "0") {
+            return $row;
+        }
+        
+        $this->titles_row_number = (int) $this->titles_row_number;
+
+        $rows = $this->getCsvColumnsData($this->titles_row_number, $this->titles_row_number);
+        if (!$rows) {
+            return $row;
+        }
+        
+        $this->_headersData = $rows[0];
+
+        if ($this->_headersData) {
+            foreach ($this->_headersData as $key => $value)
+            {
+                $result[$value] = ArrayHelper::getValue($row, $key);
+            }
+        } else {
+            $result = $row;
+        }
+        
+        return $result;
+    }
+    
     public function execute()
     {
         ini_set("memory_limit", "8192M");
