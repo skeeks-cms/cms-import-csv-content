@@ -515,8 +515,6 @@ class ImportCsvContentHandler extends ImportCsvHandler
         $imageData = $this->getValue('image', $row);
         $images = explode(",", $imageData);
 
-
-
         if (count($images) == 0) {
             return $this;
         }
@@ -551,6 +549,10 @@ class ImportCsvContentHandler extends ImportCsvHandler
         
         foreach ($images as $image) {
             $image = trim($image);
+            if (!$image) {
+                continue;
+            }
+            
             $file = \Yii::$app->storage->upload($this->_fileHandler($image), [
                 'name' => $element->name,
             ]);
