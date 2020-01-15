@@ -591,7 +591,7 @@ class ImportCsvContentHandler extends ImportCsvHandler
                 throw new Exception("Ошибка сохранения данных элемента: ".print_r($element->errors, true));
             }
             if (!$element->relatedPropertiesModel->save()) {
-                throw new Exception("Ошибка сохранения данных свойств элемента: ".print_r($element->errors, true));
+                throw new Exception("Ошибка сохранения данных свойств элемента: ".print_r($element->relatedPropertiesModel->errors, true));
             }
 
             $this->_initImages($element, $row);
