@@ -652,7 +652,7 @@ HTML;
             return $row;
         }
         
-        $this->_headersData = $rows[0];
+        $this->_headersData = array_shift($rows);
 
         if ($this->_headersData) {
             foreach ($this->_headersData as $key => $value)
