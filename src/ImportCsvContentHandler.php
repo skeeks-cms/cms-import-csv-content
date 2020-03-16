@@ -599,11 +599,11 @@ class ImportCsvContentHandler extends ImportCsvHandler
             $result->data = $this->matching;
             $result->message = ($isUpdate === true ? "Элемент обновлен" : 'Элемент создан');
 
-            $element->relatedPropertiesModel->initAllProperties();
-            $rp = Json::encode($element->relatedPropertiesModel->toArray());
+            //$element->relatedPropertiesModel->initAllProperties();
+            //$rp = Json::encode($element->relatedPropertiesModel->toArray());
             $rp = '';
             $result->html = <<<HTML
-Элемент: <a href="{$element->url}" data-pjax="0" target="_blank">{$element->id}</a> $rp
+Элемент: <a href="{$element->url}" data-pjax="0" target="_blank">{$element->id}</a>
 HTML;
             //unset($element->relatedPropertiesModel);
             unset($element);
@@ -674,6 +674,8 @@ HTML;
         $base_memory_usage = memory_get_usage();
         $this->memoryUsage(memory_get_usage(), $base_memory_usage);
 
+        $this->beforeExecute();
+
         $rows = $this->getCsvColumnsData($this->startRow, $this->endRow);
         $results = [];
         $totalSuccess = 0;
@@ -692,8 +694,9 @@ HTML;
             }
 
             unset($result);
-            echo $this->memoryUsage(memory_get_usage(), $base_memory_usage);
+            $this->result->stdout("\t\t\t" . $this->memoryUsage(memory_get_usage(), $base_memory_usage) . "\n");
 
+            gc_collect_cycles();
             //$results[$number] = $result;
         }
 
