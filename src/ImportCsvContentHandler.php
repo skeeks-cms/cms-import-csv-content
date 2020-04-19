@@ -524,6 +524,7 @@ class ImportCsvContentHandler extends ImportCsvHandler
         if (
             !$element->image &&
             $firstImageUrl) {
+            
             $file = \Yii::$app->storage->upload($this->_fileHandler($firstImageUrl), [
                 'name' => $element->name,
             ]);
