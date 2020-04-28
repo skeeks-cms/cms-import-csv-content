@@ -72,6 +72,7 @@ class ImportCsvContentHandler extends ImportCsvHandler
         ]);
 
         $fields = [];
+        $fields['element.external_id'] = "Уникальный код";
         $fields['element.active'] = "Активность";
 
         $fields['element.name'] = "Название";
@@ -415,7 +416,11 @@ class ImportCsvContentHandler extends ImportCsvHandler
             if ($uniqueValue) {
                 if (strpos("field_".$this->unique_field, 'element.')) {
                     $realName = str_replace("element.", "", $this->unique_field);
-                    $element = CmsContentElement::find()->where([$realName => $uniqueValue])->one();
+                    $element = CmsContentElement::find()
+                        ->where([$realName => $uniqueValue])
+                        ->andWhere(["cms_site_id" => \Yii::$app->skeeks->site->id])
+                        ->andWhere(["content_id" => $this->content_id])
+                    ->one();
 
                 } else if (strpos("field_".$this->unique_field, 'property.')) {
                     $realName = str_replace("property.", "", $this->unique_field);
