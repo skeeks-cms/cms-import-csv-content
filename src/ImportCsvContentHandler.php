@@ -688,6 +688,8 @@ HTML;
         $totalErrors = 0;
 
         $this->result->stdout("\tCSV import: c {$this->startRow} по {$this->endRow}\n");
+        $this->result->stdout("\t\t\t" . $this->memoryUsage(memory_get_usage(), $base_memory_usage) . "\n");
+        sleep(5);
 
         foreach ($rows as $number => $data) {
             $result = $this->import($number, $data);
@@ -699,6 +701,7 @@ HTML;
                 $totalErrors++;
             }
 
+            unset($rows[$number]);
             unset($result);
             $this->result->stdout("\t\t\t" . $this->memoryUsage(memory_get_usage(), $base_memory_usage) . "\n");
 
