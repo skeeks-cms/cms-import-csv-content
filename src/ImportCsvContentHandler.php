@@ -692,6 +692,7 @@ HTML;
         sleep(5);
 
         foreach ($rows as $number => $data) {
+            $baseRowMemory = memory_get_usage();
             $result = $this->import($number, $data);
             if ($result->success) {
                 $this->result->stdout("\tСтрока: {$number}: {$result->message}\n");
@@ -701,10 +702,14 @@ HTML;
                 $totalErrors++;
             }
 
+            //$this->result->stdout("\t\t\t memory: " . $this->memoryUsage(memory_get_usage(), $baseRowMemory) . "\n");
             unset($rows[$number]);
             unset($result);
-            $this->result->stdout("\t\t\t" . $this->memoryUsage(memory_get_usage(), $base_memory_usage) . "\n");
+            //$this->result->stdout("\t\t\t memory: " . $this->memoryUsage(memory_get_usage(), $baseRowMemory) . "\n");
 
+            if ($number % 25 == 0) {
+                $this->result->stdout("\t\t\t Total memory: " . $this->memoryUsage(memory_get_usage(), $base_memory_usage) . "\n");
+            }
             gc_collect_cycles();
             //$results[$number] = $result;
         }
