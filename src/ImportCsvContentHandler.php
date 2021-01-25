@@ -15,6 +15,7 @@ use skeeks\cms\importCsvContent\widgets\MatchingInput;
 use skeeks\cms\models\CmsContent;
 use skeeks\cms\models\CmsContentElement;
 use skeeks\cms\models\CmsContentElementImage;
+use skeeks\cms\models\CmsContentElementProperty;
 use skeeks\cms\models\CmsContentProperty;
 use skeeks\cms\models\CmsContentPropertyEnum;
 use skeeks\cms\relatedProperties\PropertyType;
@@ -89,11 +90,29 @@ class ImportCsvContentHandler extends ImportCsvHandler
         //$fields['main_image_images'] = 'Ссылка на главное изображение и второстепенные';
         //$fields['images'] = 'Ссылки на второстепенные изображения';
 
-        $element->relatedPropertiesModel->initAllProperties();
+        $q = $this->cmsContent->getCmsContentProperties();
+        $q->andWhere([
+            'or',
+            [CmsContentProperty::tableName().'.cms_site_id' => null],
+            [CmsContentProperty::tableName().'.cms_site_id' => \Yii::$app->skeeks->site->id],
+        ]);
+        $q->orderBy(['priority' => SORT_ASC]);
+
+        if ($properties = $q->all()) {
+            /**
+             * @var $property CmsContentProperty
+             */
+            foreach ($properties as $property)
+            {
+                $fields['property.'.$property->code] = $property->name." [свойство][".$property->code."]";
+            }
+        }
+
+        /*$element->relatedPropertiesModel->initAllProperties();
         foreach ($element->relatedPropertiesModel->attributeLabels() as $key => $name) {
             $p = $element->relatedPropertiesModel->getRelatedProperty($key);
             $fields['property.'.$key] = $name." [свойство][".$p->code."]";
-        }
+        }*/
 
 
         return array_merge(['' => ' - '], $fields);
