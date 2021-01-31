@@ -79,6 +79,8 @@ class ImportCsvContentHandler extends ImportCsvHandler
         $fields['element.name'] = "Название";
         $fields['element.description_short'] = "Короткое описание";
         $fields['element.description_full'] = "Подробное описание";
+        
+        $fields['desc'] = "Подробное описание (sitika)";
 
         $fields['element.tree_id'] = "ID главного раздела";
 
@@ -219,6 +221,15 @@ class ImportCsvContentHandler extends ImportCsvHandler
             $realName = str_replace("element.", "", $fieldName);
             $cmsContentElement->{$realName} = $value;
 
+        } elseif ($fieldName == 'desc') {
+            if ($value) {
+                $cmsContentElement->description_full = base64_decode($value);
+                /*try {
+                    $cmsContentElement->description_full = base64_decode($value);
+                } catch (\Exception $e) {
+                    
+                }*/
+            }
         } else if (strpos("field_".$fieldName, 'property.')) {
 
             $realName = str_replace("property.", "", $fieldName);
@@ -226,7 +237,7 @@ class ImportCsvContentHandler extends ImportCsvHandler
             $brands = [];
             $brand = '';
 
-            if ($property->property_type == PropertyType::CODE_ELEMENT) {
+            if ($property && $property->property_type == PropertyType::CODE_ELEMENT) {
                 if ($property = $cmsContentElement->relatedPropertiesModel->getRelatedProperty($realName)) {
                     $content_id = $property->handler->content_id;
                     $valueList = explode(',', $value);
@@ -275,7 +286,7 @@ class ImportCsvContentHandler extends ImportCsvHandler
 
                 }
 
-            } else if ($property->property_type == PropertyType::CODE_LIST) {
+            } else if ($property && $property->property_type == PropertyType::CODE_LIST) {
                 if ($property = $cmsContentElement->relatedPropertiesModel->getRelatedProperty($realName)) {
                     $valueList = explode(',', $value);
 
@@ -318,7 +329,9 @@ class ImportCsvContentHandler extends ImportCsvHandler
                     }
                 }
             } else {
-                $cmsContentElement->relatedPropertiesModel->setAttribute($realName, $value);
+                if ($cmsContentElement->relatedPropertiesModel->hasAttribute($realName)) {
+                    $cmsContentElement->relatedPropertiesModel->setAttribute($realName, $value);
+                }
             }
         }
     }
